@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">MyLabs</string>
+    <string name="hello_message">Hello world!</string>
 </resources>
