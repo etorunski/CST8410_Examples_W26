@@ -15,6 +15,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.sp
+import com.example.mylabs.ui.theme.AppTheme
 import com.example.mylabs.ui.theme.MyLabsTheme
 
 class MainActivity : ComponentActivity  (){ // means call constructor from parent
@@ -30,7 +31,11 @@ class MainActivity : ComponentActivity  (){ // means call constructor from paren
         enableEdgeToEdge()
 
         setContent { // ( ) { }
-            MyLabsTheme( content = { //MyLabsTheme is a lambda function
+            //your color theme:
+            AppTheme( content = { //MyLabsTheme is a lambda function
+
+
+
                 Scaffold( modifier = Modifier.fillMaxSize())
                     { innerPadding -> //body of the page
                         Greeting( name = "Eric", modifier = Modifier.padding(innerPadding) )
@@ -100,7 +105,7 @@ fun Greeting(name: String, modifier: Modifier = Modifier) {
     Text(
         //color = Color(red=255, green = 255, blue=0),
 
-        text = stringResource(R.string.message)  ,
+        text = stringResource(R.string.hello_message)  ,
         fontSize= 32.sp,
         modifier = modifier
     )
@@ -109,7 +114,7 @@ fun Greeting(name: String, modifier: Modifier = Modifier) {
 @Preview(showBackground = true)
 @Composable
 fun doesntMatter() {
-    MyLabsTheme {
+    AppTheme {
         Greeting("Sahar")
     }
 }
