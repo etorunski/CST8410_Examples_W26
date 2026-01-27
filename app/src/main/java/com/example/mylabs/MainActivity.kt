@@ -9,17 +9,35 @@ import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.width
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Email
+import androidx.compose.material3.Button
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.mylabs.ui.theme.AppTheme
 
@@ -46,10 +64,11 @@ class MainActivity : ComponentActivity  (){ // means call constructor from paren
 
             //your color theme:
             AppTheme( content = { //MyLabsTheme is a lambda function
-
-
-
-                Scaffold( modifier = Modifier.fillMaxSize())
+                Scaffold( modifier = Modifier.fillMaxSize().background(Color.Yellow),
+                    topBar ={ Text("The app")},
+                    bottomBar = {  },
+                    contentWindowInsets = WindowInsets.safeDrawing
+                )
                     { innerPadding -> //body of the page
                         DisplayLighting( lightingValue = lightReading.value, modifier = Modifier.padding(innerPadding) )
                     }
@@ -108,20 +127,37 @@ class MainActivity : ComponentActivity  (){ // means call constructor from paren
 //this is our function:
 @Composable
 fun DisplayLighting(lightingValue: Float, modifier: Modifier = Modifier) {
-    Text(
-        //color = Color(red=255, green = 255, blue=0),
 
-        text = stringResource(R.string.lighting_value) + lightingValue.toString()
-        ,
-        fontSize= 32.sp,
-        modifier = modifier
-    )
+    Column(
+        modifier=modifier.background(Color.Yellow),
+        verticalArrangement = Arrangement.SpaceEvenly,
+        horizontalAlignment = Alignment.Start
+    ) {
+        Text(
+            text = stringResource(R.string.lighting_value) + lightingValue.toString(),
+            fontSize = 30.sp,
+            modifier = modifier
+        )
+        Icon(Icons.Filled.Email, contentDescription = "Favorite")
+        Button( onClick = {  }){
+            //content can be Text, or image
+            Image(painter = painterResource(R.drawable.beach),
+                modifier = Modifier.width(200.dp).height(200.dp),
+            contentDescription = "A beach")
+        }
+        //for screen readers of visually impaired
+        Image(painter = painterResource(R.drawable.app_icon),
+            modifier = Modifier.fillMaxWidth(0.25f).fillMaxHeight(0.25f),
+            contentDescription = "an app icon")
+
+
+    }
 }
 
 @Preview(showBackground = true)
 @Composable
 fun doesntMatter() {
     AppTheme {
-        DisplayLighting(1.5f)
+        DisplayLighting(123.5f)
     }
 }
