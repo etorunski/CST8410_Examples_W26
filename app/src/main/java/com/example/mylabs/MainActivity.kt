@@ -1,5 +1,9 @@
 package com.example.mylabs
 
+import android.hardware.Sensor
+import android.hardware.SensorEvent
+import android.hardware.SensorEventListener
+import android.hardware.SensorManager
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
@@ -10,13 +14,14 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.sp
 import com.example.mylabs.ui.theme.AppTheme
-import com.example.mylabs.ui.theme.MyLabsTheme
 
 class MainActivity : ComponentActivity  (){ // means call constructor from parent
     val TAG = "MainActivity";
@@ -28,9 +33,17 @@ class MainActivity : ComponentActivity  (){ // means call constructor from paren
         Log.w(TAG, "In onCreate() - Loading Widgets")
 
 
+        var sensorManager = getSystemService(SENSOR_SERVICE) as SensorManager
+
+
         enableEdgeToEdge()
 
-        setContent { // ( ) { }
+        setContent {
+            //inside here is a Composable
+
+            //local variable, remember means save the previous value
+            var lightReading = remember {mutableStateOf(0.0f) }//initially 0
+
             //your color theme:
             AppTheme( content = { //MyLabsTheme is a lambda function
 
@@ -38,21 +51,30 @@ class MainActivity : ComponentActivity  (){ // means call constructor from paren
 
                 Scaffold( modifier = Modifier.fillMaxSize())
                     { innerPadding -> //body of the page
-                        Greeting( name = "Eric", modifier = Modifier.padding(innerPadding) )
+                        DisplayLighting( lightingValue = lightReading.value, modifier = Modifier.padding(innerPadding) )
                     }
             })
+            val lightSensor = sensorManager.getDefaultSensor(Sensor.TYPE_LIGHT) //get the light sensor
+
+            if(lightSensor != null){
+                //the sensor is on the phone:
+                val sensorListener  = object : SensorEventListener {
+                    //the two functions required by the Interface
+
+                    //the sensor has a new hardware reading
+                    override fun onSensorChanged(reading: SensorEvent) {
+                        val readings = reading.values //is an array, either 1-d or 3-d
+
+                        //cause a recomposition by changing the value:
+                        lightReading.value = readings[0]//the new value of light intensity
+                    }
+                    //the sensor's accuracy is different
+                    override fun onAccuracyChanged(p0: Sensor?, p1: Int) {
+                    }
+                }
+                sensorManager.registerListener(sensorListener, lightSensor, SensorManager.SENSOR_DELAY_NORMAL)
+            }
         }
-
-/*
-        //all from this lab:
-        takeOtherString ( ::function1 )
-
-                    //f is the last parameter, when ( ) are empty, remove them
-
-        takeOtherString { str : String-> var result =   str.length}    // no ( )
-        takeOtherString( ) { str : String-> var result =   str.length} //( ) before { }
-        takeOtherString( { str : String-> var result =   str.length} ) // ( { } )
-*/
     }
 
     override fun onStart() {
@@ -79,33 +101,18 @@ class MainActivity : ComponentActivity  (){ // means call constructor from paren
         super.onDestroy()
     }
 
-    fun function1 (s : String )
-    {
-        var result = s.contains("Hello")
-    }
-
-    fun takeOtherString( f : (String) -> Unit ) //f is at the end of the list
-    {
-        var aString = "This is a string"
-        f(aString) //false, no "Hello"
-    }
-
-    fun printStrings ( str1 : String = "Hello", str2: String = "World") //Unit means void
-    {
-        var result = "Str1:${str1.toString()} Str2:${str2.length}"
-
-    }
 
 }
 
 
 //this is our function:
 @Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
+fun DisplayLighting(lightingValue: Float, modifier: Modifier = Modifier) {
     Text(
         //color = Color(red=255, green = 255, blue=0),
 
-        text = stringResource(R.string.hello_message)  ,
+        text = stringResource(R.string.lighting_value) + lightingValue.toString()
+        ,
         fontSize= 32.sp,
         modifier = modifier
     )
@@ -115,6 +122,6 @@ fun Greeting(name: String, modifier: Modifier = Modifier) {
 @Composable
 fun doesntMatter() {
     AppTheme {
-        Greeting("Sahar")
+        DisplayLighting(1.5f)
     }
 }
