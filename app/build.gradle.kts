@@ -43,6 +43,7 @@ android {
 
 dependencies {
 
+    implementation("com.google.android.gms:play-services-code-scanner:16.1.0")
     implementation(libs.androidx.security.crypto)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)

@@ -1,11 +1,16 @@
 package com.example.mylabs
 
 
+import android.app.Activity
+import android.content.Intent
 import android.os.Bundle
+import android.speech.RecognizerIntent
 import android.util.Log
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -42,6 +47,10 @@ import androidx.compose.ui.unit.sp
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKeys
 import com.example.mylabs.ui.theme.AppTheme
+import com.google.mlkit.vision.barcode.common.Barcode
+import com.google.mlkit.vision.codescanner.GmsBarcodeScannerOptions
+import com.google.mlkit.vision.codescanner.GmsBarcodeScanning
+import java.util.Locale
 
 class MainActivity : ComponentActivity  (){ // means call constructor from parent
     val TAG = "MainActivity";
@@ -110,10 +119,28 @@ fun DisplayText(modifier: Modifier = Modifier) {
     )
 
 
+
+
+
     //store the value for next call
     var currentValue = remember { mutableStateOf(sharedPreferences.getString("USER_INPUT", "").orEmpty() ) }
     var agreeCollectData = remember{mutableStateOf(false) }
     var isShowingDialog = remember { mutableStateOf(true) }
+
+//need this for speech recognition:
+    val launcher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+        if (it.resultCode == Activity.RESULT_OK) {
+            //called when recording is done:
+            val data = it.data
+            val result = data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
+            //save what was returned:
+            currentValue.value = result?.get(0) ?: "No speech detected."
+        } else {
+            //result is not RESULT_OK
+            currentValue.value = "[Speech recognition failed.]"
+        }
+    }
+    //end of speech recognition:
 
     if (isShowingDialog.value)
         AlertDialog(
@@ -160,6 +187,39 @@ fun DisplayText(modifier: Modifier = Modifier) {
                 label = { Text("Type below") },
                 placeholder = { Text("Type here") }
             )
+//this should launch the speech recognition:
+        Button(onClick = {
+            val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
+            intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+            intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
+            intent.putExtra(RecognizerIntent.EXTRA_PROMPT, "Go on then, say something.")
+            launcher.launch(intent)
+        }) {
+            Text("Start speech recognition")
+        }
+        //end of button
+
+        Button(onClick = {
+            val options = GmsBarcodeScannerOptions.Builder()
+                .setBarcodeFormats(Barcode.FORMAT_DATA_MATRIX)
+                //.enableAutoZoom()
+                .build()
+            val scanner = GmsBarcodeScanning.getClient(context, options)
+            scanner.startScan()
+                .addOnSuccessListener { barcode ->
+                    // Task completed successfully
+                    val rawValue: String? = barcode.rawValue
+                    currentValue.value = rawValue.orEmpty()
+                }
+                .addOnCanceledListener {
+                    // Task canceled
+                }
+                .addOnFailureListener { e ->
+                    // Task failed with an exception
+                }
+        }) {
+            Text("Start vision recognition")
+        }
     }
 
 
