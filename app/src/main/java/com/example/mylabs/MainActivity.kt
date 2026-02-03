@@ -1,5 +1,6 @@
 package com.example.mylabs
 
+import android.R.attr.label
 import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
@@ -27,6 +28,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -47,21 +49,11 @@ class MainActivity : ComponentActivity  (){ // means call constructor from paren
     //this gets called first on loading
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
         Log.w(TAG, "In onCreate() - Loading Widgets")
 
-
-        var sensorManager = getSystemService(SENSOR_SERVICE) as SensorManager
-
-
         enableEdgeToEdge()
-
         setContent {
             //inside here is a Composable
-
-            //local variable, remember means save the previous value
-            var lightReading = remember {mutableStateOf(0.0f) }//initially 0
-
             //your color theme:
             AppTheme( content = { //MyLabsTheme is a lambda function
                 Scaffold( modifier = Modifier.fillMaxSize().background(Color.Yellow),
@@ -70,29 +62,9 @@ class MainActivity : ComponentActivity  (){ // means call constructor from paren
                     contentWindowInsets = WindowInsets.safeDrawing
                 )
                     { innerPadding -> //body of the page
-                        DisplayLighting( lightingValue = lightReading.value, modifier = Modifier.padding(innerPadding) )
+                        DisplayText( modifier = Modifier.padding(innerPadding) )
                     }
             })
-            val lightSensor = sensorManager.getDefaultSensor(Sensor.TYPE_LIGHT) //get the light sensor
-
-            if(lightSensor != null){
-                //the sensor is on the phone:
-                val sensorListener  = object : SensorEventListener {
-                    //the two functions required by the Interface
-
-                    //the sensor has a new hardware reading
-                    override fun onSensorChanged(reading: SensorEvent) {
-                        val readings = reading.values //is an array, either 1-d or 3-d
-
-                        //cause a recomposition by changing the value:
-                        lightReading.value = readings[0]//the new value of light intensity
-                    }
-                    //the sensor's accuracy is different
-                    override fun onAccuracyChanged(p0: Sensor?, p1: Int) {
-                    }
-                }
-                sensorManager.registerListener(sensorListener, lightSensor, SensorManager.SENSOR_DELAY_NORMAL)
-            }
         }
     }
 
@@ -119,45 +91,38 @@ class MainActivity : ComponentActivity  (){ // means call constructor from paren
     override fun onDestroy() {
         super.onDestroy()
     }
-
-
 }
 
 
 //this is our function:
 @Composable
-fun DisplayLighting(lightingValue: Float, modifier: Modifier = Modifier) {
+fun DisplayText(modifier: Modifier = Modifier) {
+                    //store the value for next call
+    var currentValue = remember { mutableStateOf("Hello world") }
 
     Column(
-        modifier=modifier.background(Color.Yellow),
-        verticalArrangement = Arrangement.SpaceEvenly,
+        modifier=modifier.fillMaxHeight(),//.background(Color.Yellow),
+        verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.Start
     ) {
         Text(
-            text = stringResource(R.string.lighting_value) + lightingValue.toString(),
+            text =  "Our currentValue is ${currentValue.value}" ,
             fontSize = 30.sp,
             modifier = modifier
         )
-        Icon(Icons.Filled.Email, contentDescription = "Favorite")
-        Button( onClick = {  }){
-            //content can be Text, or image
-            Image(painter = painterResource(R.drawable.beach),
-                modifier = Modifier.width(200.dp).height(200.dp),
-            contentDescription = "A beach")
-        }
-        //for screen readers of visually impaired
-        Image(painter = painterResource(R.drawable.app_icon),
-            modifier = Modifier.fillMaxWidth(0.25f).fillMaxHeight(0.25f),
-            contentDescription = "an app icon")
-
-
+        TextField( value = currentValue.value,
+            onValueChange = { newText ->//user types something in:
+                currentValue.value = newText}, //changing, do redraw
+                label = { Text("Type below") },
+                placeholder = { Text("Type here") }
+            )
     }
-}
+} //variable disappears
 
 @Preview(showBackground = true)
 @Composable
 fun doesntMatter() {
     AppTheme {
-        DisplayLighting(123.5f)
+        DisplayText()
     }
 }
