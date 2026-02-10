@@ -52,8 +52,41 @@ import com.google.mlkit.vision.codescanner.GmsBarcodeScannerOptions
 import com.google.mlkit.vision.codescanner.GmsBarcodeScanning
 import java.util.Locale
 
+import kotlinx.serialization.Serializable
+
+import kotlinx.serialization.SerialName
+import io.ktor.client.*
+import io.ktor.client.call.body
+import io.ktor.client.engine.android.*
+import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.client.request.post
+import io.ktor.client.request.setBody
+import io.ktor.client.statement.HttpResponse
+import io.ktor.http.ContentType
+import io.ktor.http.contentType
+import io.ktor.serialization.kotlinx.json.json
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+
+@Serializable
+data class LoginRequest(
+    @SerialName("loginName")
+    var loginName: String?,
+    @SerialName("password")
+    var password: String?
+)
+
+
+
+
+
+
+
+
 class MainActivity : ComponentActivity  (){ // means call constructor from parent
     val TAG = "MainActivity";
+
 
     //this gets called first on loading
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -107,6 +140,12 @@ class MainActivity : ComponentActivity  (){ // means call constructor from paren
 @Composable
 fun DisplayText(modifier: Modifier = Modifier) {
 
+    val client = HttpClient(Android){
+        install(ContentNegotiation) {
+            json()
+        }
+    }
+
     val context = LocalContext.current
     val mainKey = MasterKeys.getOrCreate(MasterKeys.AES256_GCM_SPEC)//get the cryptographic key
 
@@ -127,20 +166,6 @@ fun DisplayText(modifier: Modifier = Modifier) {
     var agreeCollectData = remember{mutableStateOf(false) }
     var isShowingDialog = remember { mutableStateOf(true) }
 
-//need this for speech recognition:
-    val launcher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
-        if (it.resultCode == Activity.RESULT_OK) {
-            //called when recording is done:
-            val data = it.data
-            val result = data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
-            //save what was returned:
-            currentValue.value = result?.get(0) ?: "No speech detected."
-        } else {
-            //result is not RESULT_OK
-            currentValue.value = "[Speech recognition failed.]"
-        }
-    }
-    //end of speech recognition:
 
     if (isShowingDialog.value)
         AlertDialog(
@@ -189,13 +214,22 @@ fun DisplayText(modifier: Modifier = Modifier) {
             )
 //this should launch the speech recognition:
         Button(onClick = {
-            val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
-            intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-            intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
-            intent.putExtra(RecognizerIntent.EXTRA_PROMPT, "Go on then, say something.")
-            launcher.launch(intent)
+
+            CoroutineScope( Dispatchers.IO).launch {
+
+                //a lambda function as last parameter to the call:
+                val response: HttpResponse = client.post("http://10.0.2.2:8080/firstTest") {
+                    contentType(ContentType.Application.Json)
+                    setBody(LoginRequest("Eric", "abc123"))
+                }
+                var text = response.body<String>()
+                println(text + " " + response.status)
+            }
+
+
+
         }) {
-            Text("Start speech recognition")
+            Text("Send to server")
         }
         //end of button
 
