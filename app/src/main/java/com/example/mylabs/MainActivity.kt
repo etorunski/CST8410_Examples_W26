@@ -16,7 +16,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.sp
 import com.example.mylabs.ui.theme.AppTheme
-import com.example.mylabs.ui.theme.MyLabsTheme
 
 class MainActivity : ComponentActivity  (){ // means call constructor from parent
     val TAG = "MainActivity";
@@ -34,25 +33,13 @@ class MainActivity : ComponentActivity  (){ // means call constructor from paren
             //your color theme:
             AppTheme( content = { //MyLabsTheme is a lambda function
 
-
-
                 Scaffold( modifier = Modifier.fillMaxSize())
                     { innerPadding -> //body of the page
-                        Greeting( name = "Eric", modifier = Modifier.padding(innerPadding) )
+                        Greeting(  modifier = Modifier.padding(innerPadding) )
                     }
             })
         }
 
-/*
-        //all from this lab:
-        takeOtherString ( ::function1 )
-
-                    //f is the last parameter, when ( ) are empty, remove them
-
-        takeOtherString { str : String-> var result =   str.length}    // no ( )
-        takeOtherString( ) { str : String-> var result =   str.length} //( ) before { }
-        takeOtherString( { str : String-> var result =   str.length} ) // ( { } )
-*/
     }
 
     override fun onStart() {
@@ -79,29 +66,12 @@ class MainActivity : ComponentActivity  (){ // means call constructor from paren
         super.onDestroy()
     }
 
-    fun function1 (s : String )
-    {
-        var result = s.contains("Hello")
-    }
-
-    fun takeOtherString( f : (String) -> Unit ) //f is at the end of the list
-    {
-        var aString = "This is a string"
-        f(aString) //false, no "Hello"
-    }
-
-    fun printStrings ( str1 : String = "Hello", str2: String = "World") //Unit means void
-    {
-        var result = "Str1:${str1.toString()} Str2:${str2.length}"
-
-    }
-
 }
 
 
 //this is our function:
 @Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
+fun Greeting( modifier: Modifier = Modifier) {
     Text(
         //color = Color(red=255, green = 255, blue=0),
 
@@ -115,6 +85,6 @@ fun Greeting(name: String, modifier: Modifier = Modifier) {
 @Composable
 fun doesntMatter() {
     AppTheme {
-        Greeting("Sahar")
+        Greeting()
     }
 }
