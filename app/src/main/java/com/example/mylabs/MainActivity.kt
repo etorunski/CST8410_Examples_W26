@@ -1,5 +1,9 @@
 package com.example.mylabs
 
+import android.bluetooth.BluetoothAdapter
+import android.bluetooth.BluetoothGattServer
+import android.bluetooth.BluetoothManager
+import android.content.Context
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
@@ -20,12 +24,26 @@ import com.example.mylabs.ui.theme.AppTheme
 class MainActivity : ComponentActivity  (){ // means call constructor from parent
     val TAG = "MainActivity";
 
+    //Step 1
+    private var bluetoothManager : BluetoothManager? = null
+    private var bluetoothAdapter: BluetoothAdapter? = null
+    private var gattServer : BluetoothGattServer? = null
+
+
+
+
     //this gets called first on loading
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         Log.w(TAG, "In onCreate() - Loading Widgets")
 
+        bluetoothManager = getSystemService(Context.BLUETOOTH_SERVICE) as? BluetoothManager
+
+        if(bluetoothManager!= null){ //you might not have bluetooth
+
+            bluetoothAdapter = bluetoothManager?.getAdapter() //get connection to radio transmitter
+        }
 
         enableEdgeToEdge()
 
