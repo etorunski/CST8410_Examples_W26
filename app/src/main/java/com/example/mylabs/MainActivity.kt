@@ -5,9 +5,13 @@ import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothGattServer
 import android.bluetooth.BluetoothGattServerCallback
 import android.bluetooth.BluetoothManager
+import android.bluetooth.le.AdvertiseCallback
+import android.bluetooth.le.AdvertiseData
+import android.bluetooth.le.AdvertiseSettings
 import android.content.Context
 import android.os.Build
 import android.os.Bundle
+import android.os.ParcelUuid
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -24,6 +28,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.sp
 import com.example.mylabs.ui.theme.AppTheme
+import java.util.UUID
 
 class MainActivity : ComponentActivity  (){ // means call constructor from parent
     val TAG = "MainActivity";
@@ -49,10 +54,45 @@ class MainActivity : ComponentActivity  (){ // means call constructor from paren
         bluetoothManager = getSystemService(Context.BLUETOOTH_SERVICE) as? BluetoothManager
 
 //the permissions window asking for bluetooth:
-        val requestPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission() ) {
-                isGranted: Boolean ->
-            if (isGranted) {  //The dialog showed and the user clicked "Ok"
+        val requestPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions() ) {
+                isGranted ->
+            if (isGranted.values.all{ it==true  }) {  //The dialog showed and the user clicked "Ok"
+
                 gattServer = bluetoothManager?.openGattServer(this, gattCallbacks )
+
+
+                //step 3: advertise the server exists:
+
+                //this is for the server to advertise its existence:
+                val bluetoothLeAdvertiser = bluetoothAdapter?.getBluetoothLeAdvertiser()
+
+                val settings = AdvertiseSettings.Builder()
+                    .setAdvertiseMode(AdvertiseSettings.ADVERTISE_MODE_BALANCED)
+                    .setTxPowerLevel(AdvertiseSettings.ADVERTISE_TX_POWER_HIGH)
+                    .setConnectable(true)
+                    .build()//end of parameters so make the object
+
+                val advertisingData = AdvertiseData.Builder()
+                    .addServiceUuid(ParcelUuid(UUID.fromString("0000180D-0000-1000-8000-00805F9B34FB")))
+                    .setIncludeDeviceName(true)
+                    .build()
+
+                val advertiseCallback = object: AdvertiseCallback() {
+                    //this function gets called if it started
+                    override fun onStartSuccess(settingsInEffect: AdvertiseSettings?) {
+                        super.onStartSuccess(settingsInEffect)
+                        Log.d(TAG, "Advertising started successfully")
+                    }
+
+                    //this function gets called if it didn't start:
+                    override fun onStartFailure(errorCode: Int) {
+                        super.onStartFailure(errorCode)
+                        Log.e(TAG, "Advertising failed with error code $errorCode")
+                    }
+                }
+
+                //This function needs  Manifest.permission.BLUETOOTH_ADVERTISE
+                bluetoothLeAdvertiser?.startAdvertising(settings, advertisingData, advertiseCallback)
             } else
             {
                 // Explain to the user that the feature is unavailable because the
@@ -67,9 +107,6 @@ class MainActivity : ComponentActivity  (){ // means call constructor from paren
         if(bluetoothManager!= null){ //you might not have bluetooth
 
             bluetoothAdapter = bluetoothManager?.getAdapter() //get connection to radio transmitter
-
-            //this is for the server to advertise its existence:
-            val bluetoothLeAdvertiser = bluetoothAdapter?.getBluetoothLeAdvertiser()
 
 
         }
@@ -89,11 +126,13 @@ class MainActivity : ComponentActivity  (){ // means call constructor from paren
 
        if( Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) //31 or more
        {
-           requestPermissionLauncher.launch(Manifest.permission.BLUETOOTH_CONNECT)
+           requestPermissionLauncher.launch(
+               arrayOf(Manifest.permission.BLUETOOTH_CONNECT,
+               Manifest.permission.BLUETOOTH_ADVERTISE)  )
        }
         else //30 or older
        {
-           requestPermissionLauncher.launch(Manifest.permission.BLUETOOTH)
+           requestPermissionLauncher.launch(arrayOf(Manifest.permission.BLUETOOTH))
        }
     }
 
