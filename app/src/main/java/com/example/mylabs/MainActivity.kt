@@ -1,14 +1,18 @@
 package com.example.mylabs
 
+import android.Manifest
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothGattServer
+import android.bluetooth.BluetoothGattServerCallback
 import android.bluetooth.BluetoothManager
 import android.content.Context
+import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
@@ -36,13 +40,38 @@ class MainActivity : ComponentActivity  (){ // means call constructor from paren
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        //this implements the server functions:
+        val gattCallbacks = object: BluetoothGattServerCallback() { } //We will implement the inherited functions one at a time and understand what each one does
+        var gattServer : BluetoothGattServer? = null
+
         Log.w(TAG, "In onCreate() - Loading Widgets")
 
         bluetoothManager = getSystemService(Context.BLUETOOTH_SERVICE) as? BluetoothManager
 
+//the permissions window asking for bluetooth:
+        val requestPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission() ) {
+                isGranted: Boolean ->
+            if (isGranted) {  //The dialog showed and the user clicked "Ok"
+                gattServer = bluetoothManager?.openGattServer(this, gattCallbacks )
+            } else
+            {
+                // Explain to the user that the feature is unavailable because the
+                // feature requires a permission that the user has denied. At the
+                // same time, respect the user's decision. Don't link to system
+                // settings in an effort to convince the user to change their
+                // decision.
+            }
+        }
+
+
         if(bluetoothManager!= null){ //you might not have bluetooth
 
             bluetoothAdapter = bluetoothManager?.getAdapter() //get connection to radio transmitter
+
+            //this is for the server to advertise its existence:
+            val bluetoothLeAdvertiser = bluetoothAdapter?.getBluetoothLeAdvertiser()
+
+
         }
 
         enableEdgeToEdge()
@@ -58,6 +87,14 @@ class MainActivity : ComponentActivity  (){ // means call constructor from paren
             })
         }
 
+       if( Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) //31 or more
+       {
+           requestPermissionLauncher.launch(Manifest.permission.BLUETOOTH_CONNECT)
+       }
+        else //30 or older
+       {
+           requestPermissionLauncher.launch(Manifest.permission.BLUETOOTH)
+       }
     }
 
     override fun onStart() {
