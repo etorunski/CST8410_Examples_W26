@@ -2,8 +2,17 @@ package com.example.mylabs
 
 import android.Manifest
 import android.bluetooth.BluetoothAdapter
+import android.bluetooth.BluetoothDevice
+import android.bluetooth.BluetoothGatt
+import android.bluetooth.BluetoothGattCharacteristic
+import android.bluetooth.BluetoothGattCharacteristic.PERMISSION_READ
+import android.bluetooth.BluetoothGattCharacteristic.PERMISSION_WRITE
+import android.bluetooth.BluetoothGattCharacteristic.PROPERTY_NOTIFY
+import android.bluetooth.BluetoothGattCharacteristic.PROPERTY_READ
+import android.bluetooth.BluetoothGattCharacteristic.PROPERTY_WRITE
 import android.bluetooth.BluetoothGattServer
 import android.bluetooth.BluetoothGattServerCallback
+import android.bluetooth.BluetoothGattService
 import android.bluetooth.BluetoothManager
 import android.bluetooth.le.AdvertiseCallback
 import android.bluetooth.le.AdvertiseData
@@ -39,15 +48,93 @@ class MainActivity : ComponentActivity  (){ // means call constructor from paren
     private var gattServer : BluetoothGattServer? = null
 
 
+    private var clientDevice : BluetoothDevice? = null
 
 
     //this gets called first on loading
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        //add variables to service:
+        var charactericticProperties = PROPERTY_READ or PROPERTY_WRITE or PROPERTY_NOTIFY
+        val newCharacteristic =
+            BluetoothGattCharacteristic(UUID.fromString("0000180D-0000-1000-8000-00805F9B34FB"),
+                charactericticProperties, PERMISSION_READ or PERMISSION_WRITE)
+
+        newCharacteristic.setValue("10") //setting var = 10
         //this implements the server functions:
-        val gattCallbacks = object: BluetoothGattServerCallback() { } //We will implement the inherited functions one at a time and understand what each one does
-        var gattServer : BluetoothGattServer? = null
+        val gattCallbacks = object: BluetoothGattServerCallback() {
+
+
+            //client is uploading data to the server:
+            override fun onCharacteristicWriteRequest(
+                device: BluetoothDevice?,
+                requestId: Int,
+                characteristic: BluetoothGattCharacteristic?,
+                preparedWrite: Boolean,
+                responseNeeded: Boolean,
+                offset: Int,
+                value: ByteArray?
+            ) {
+                super.onCharacteristicWriteRequest(
+                    device,
+                    requestId,
+                    characteristic,
+                    preparedWrite,
+                    responseNeeded,
+                    offset,
+                    value
+                )
+                //client sent value to server, store in the variable
+                newCharacteristic.setValue(value)
+                if(responseNeeded)
+                    gattServer?.sendResponse(device, requestId, BluetoothGatt.GATT_SUCCESS, 0, null)
+
+
+
+                //the client isn't initiating this write:
+                newCharacteristic.setValue("This is a new value")
+                //notify clients that the value has changed:
+                gattServer?.notifyCharacteristicChanged(device, newCharacteristic, true)
+            }
+
+
+            //client wants to know the value:
+            override fun onCharacteristicReadRequest(
+                device: BluetoothDevice?,
+                requestId: Int,
+                offset: Int,
+                characteristic: BluetoothGattCharacteristic?
+            ) {
+                super.onCharacteristicReadRequest(device, requestId, offset, characteristic)
+
+                //client - onCharacteristicRead called after this
+                gattServer?.sendResponse(device, requestId, BluetoothGatt.GATT_SUCCESS, 0, newCharacteristic.value)
+            }
+
+            override fun onConnectionStateChange(
+                device: BluetoothDevice?,
+                status: Int,
+                newState: Int
+            ) {
+                super.onConnectionStateChange(device, status, newState)
+
+                when(newState)
+                {
+                    BluetoothGatt.STATE_CONNECTED -> {
+                        clientDevice = device
+                    }
+                    BluetoothGatt.STATE_DISCONNECTED -> {
+                        clientDevice = null
+
+                        //close the connection and delete the services
+                        gattServer?.close()
+                    }
+                }
+            }
+
+        } //We will implement the inherited functions one at a time and understand what each one does
+      //  var gattServer : BluetoothGattServer? = null
 
         Log.w(TAG, "In onCreate() - Loading Widgets")
 
@@ -58,7 +145,15 @@ class MainActivity : ComponentActivity  (){ // means call constructor from paren
                 isGranted ->
             if (isGranted.values.all{ it==true  }) {  //The dialog showed and the user clicked "Ok"
 
-                gattServer = bluetoothManager?.openGattServer(this, gattCallbacks )
+
+
+               gattServer = bluetoothManager?.openGattServer(this, gattCallbacks )
+
+                var gattService = BluetoothGattService(  UUID.fromString("0000180D-0000-1000-8000-00805F9B34FB"),
+                    BluetoothGattService.SERVICE_TYPE_PRIMARY)//??
+
+                gattService.addCharacteristic(newCharacteristic) //add the characteristic to the service
+                gattServer?.addService(gattService)
 
 
                 //step 3: advertise the server exists:
@@ -154,6 +249,7 @@ class MainActivity : ComponentActivity  (){ // means call constructor from paren
     override fun onStop() {
         super.onStop()
         Log.w(TAG, "In onStop() - Not visible")
+        gattServer?.close()
     }
 
     override fun onDestroy() {
